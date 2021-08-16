@@ -1,0 +1,237 @@
+<hr/>
+<div>
+  <div class="navbar-header" style="width:100%;">
+    <div class="nav navbar-nav nav-pills navBarPadding" style="width:100%;">
+      <div routerLinkActive="active" style="font-weight:bold">
+        <a routerLink="/quiz">Quiz App</a>
+
+        <span class="text-right" routerLinkActive="active"
+            [hidden]="logoutText===''"
+            style="cursor:pointer; float: right;"
+            (click)="logoutApp()" routerLink="/login">
+          <a>
+            {{ logoutText }}
+            <i class="fa fa-sign-out" aria-hidden="true"></i>
+          </a>
+        </span>
+      </div>
+      <div class="text-right" [hidden]="!loginUserText"
+          style="font-weight:bold; color:#8a1515; cursor:default;">
+        {{ loginUserText | uppercase }}
+      </div>
+    </div>
+  </div>
+
+  <div class="container col-6" [hidden]="showLogin===false">
+    <header class="lockImgHead">
+      <h5><span class="glyphicon glyphicon-lock"></span>Login</h5>
+    </header>
+    <br/>
+
+    <form [formGroup]="loginForm" (ngSubmit)="submit(loginForm)" class="login-form" novalidate>
+      <div class="login">
+        <div class="row">
+          <div class="col-md-2">
+            Email:
+          </div>
+          <div class="col-md-10">
+            <input type="mail"
+                   name="mail"
+                   class="form-control"
+                   formControlName="mail"
+                   (keyup)="inputChanged()"
+            />
+
+            <div class="alert alert-danger" data-cy="email-error"
+                 [hidden]="loginForm.controls.mail.untouched || loginForm.controls.mail.valid">
+              A valid email address is required
+            </div>
+          </div>
+        </div>
+        <br/>
+        <div class="row">
+          <div class="col-md-2">
+            Password:
+          </div>
+          <div class="col-md-10">
+            <input type="password"
+                   name="password"
+                   class="form-control"
+                   formControlName="password"
+                   (keyup)="inputChanged()"
+            />
+
+            <div class="alert alert-danger" data-cy="password-error"
+                 [hidden]="loginForm.controls.password.untouched || loginForm.controls.password.valid"
+            >
+              Password is required (6 or more characters with at least one number)
+            </div>
+
+          </div>
+        </div>
+        <br/>
+
+        <div class="row">
+          <div class="col-md-12">
+            <button type="submit" class="btn btn-success" [disabled]="!loginForm.valid">
+              Login
+            </button>
+          </div>
+        </div>
+
+        <br/>
+        <div class="errorMsg" [hidden]="!loginForm.valid">
+          <div *ngIf="errorMessage">
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </div>
+
+</div>
+<hr/>
+
+<div id="selectQuiz" class="font-weight-bold" [hidden]="showSelectQuiz===false">
+  Select Quiz:
+  <select
+    [(ngModel)]="quizName"
+    (change)="loadQuiz(quizName)"
+    style="cursor: pointer; margin-left: 10px;"
+    title="Please Select a Quiz from the list"
+  >
+    <option *ngFor="let quiz of quizzes" [value]="quiz.id">{{quiz.name}}</option>
+  </select>
+  <hr/>
+
+  <button (click)="toggleResults()" class="btn btn-info">{{labelBtnResults}}</button>
+
+  <div id="results" class="col-md-12" style="margin-top: 20px" *ngIf="isShownPreviousResults" class="row container-fluid">
+
+    <div class="table" style="overflow-x:scroll;">
+
+      <table class="table table-striped table-hover">
+
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Quiz Name</th>
+            <th>Quiz Passed</th>
+            <th>% Score Achieved</th>
+            <th>Correct Answers</th>
+            <th>Min % Score to Pass</th>
+            <th>Quiz Date</th>
+          </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let res of results">
+          <td style="font-weight:bold;">{{ res.mail | uppercase }}</td>
+          <td style="font-weight:bold;">{{ res.quizName }}</td>
+          <td style="font-weight: bold;text-transform: uppercase;"
+              [ngStyle]="{
+              color: res.passed
+                ? 'hsl(141, 53%, 53%)'
+                : 'hsl(348, 100%, 61%)'
+            }"
+          >{{ res.passed | yesNo }}</td>
+          <td style="font-weight:bold;">{{ res.percentageScore }}%</td>
+          <td>{{ res.correctAnswers }}</td>
+          <td>{{ quiz.minPercToPass }}%</td>
+          <td style="font-weight:bold;">{{ res.dateQuiz | date:'MMMM d, y - h:mm:ss a' }}</td>
+        </tr>
+
+        <tr *ngIf="!results.length">
+          <td colspan="6" class="no-data-found-td">No Quiz Results Found for User: {{ user.mail | uppercase }}</td>
+        </tr>
+
+        </tbody>
+      </table>
+
+    </div>
+
+  </div>
+  <hr/>
+
+</div>
+
+<div id="quiz" [hidden]="quizName===null">
+
+  <h2 class="text-center font-weight-normal" [hidden]="mode==='result'">{{quiz.name}}</h2>
+  <hr/>
+
+  <div *ngIf="mode=='quiz' && quiz">
+    <div *ngFor="let question of filteredQuestions;">
+      <div class="badge badge-info">Question {{pager.index + 1}} of {{pager.count}}.</div>
+      <div *ngIf="config.duration" class="badge badge-info float-right">Time: {{ellapsedTime}} / {{duration}}</div>
+      <h3 class="font-weight-normal">{{pager.index + 1}}.
+        <span [innerHTML]="question.name"></span>
+      </h3>
+      <div class="row text-left options">
+        <div class="col-6" *ngFor="let option of question.options">
+          <div class="option">
+            <label class="font-weight-normal" [attr.for]="option.id">
+              <input id="{{option.id}}" type="checkbox" [(ngModel)]="option.selected"
+                     (change)="onSelect(question, option);"/> {{option.name}}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr/>
+    <div class="text-center">
+      <button class="btn btn-default" *ngIf="config.allowBack" (click)="goTo(0);">First</button>
+      <button class="btn btn-default" *ngIf="config.allowBack" (click)="goTo(pager.index - 1);">Prev</button>
+      <button class="btn btn-primary" (click)="goTo(pager.index + 1);">Next</button>
+      <button class="btn btn-default" *ngIf="config.allowBack" (click)="goTo(pager.count - 1);">Last</button>
+    </div>
+  </div>
+
+  <div class="row text-center" *ngIf="mode=='review'">
+    <div class="col-4 cursor-pointer" *ngFor="let question of quiz.questions; let index = index;">
+      <div (click)="goTo(index)"
+           class="p-3 mb-2 {{ isAnswered(question) == 'Answered'? 'bg-info': 'bg-warning' }}">{{index + 1}}
+        . {{ isAnswered(question) }}</div>
+    </div>
+  </div>
+
+  <button class="btn btn-info" *ngIf="mode==='result'" (click)="toggleCurrentResult();">{{labelBtnCurrentResult}} "{{quiz.name}}"</button>
+  <hr/>
+
+  <div class="result" *ngIf="isShownCurrentResult">
+
+    <button class="btn btn-info" (click)="closeQuizResult();">Close Quiz</button>
+    <hr/>
+
+    <h2>Current Quiz Result</h2>
+    <div *ngFor="let question of quiz.questions; let index = index">
+      <div class="result-question">
+        <h5>{{index + 1}}. {{question.name}}</h5>
+        <div class="row">
+          <div class="col-6" *ngFor="let opt of question.options">
+            <input id="{{opt.id}}" type="checkbox" disabled="disabled"
+                   [(ngModel)]="opt.selected"/> {{opt.name}}
+          </div>
+        </div>
+
+        <div class="p-1 m-2 alert {{ isCorrect(question) == 'correct' ? 'alert-success': 'alert-danger'}}">Your answer
+          is {{isCorrect(question)}}.
+        </div>
+
+      </div>
+    </div>
+    <hr/>
+    <button class="btn btn-info" (click)="closeQuizResult();">Close Quiz</button>
+
+  </div>
+
+  <div *ngIf="mode!='result'">
+    <button class="btn btn-warning" (click)="mode='quiz'">Return to Quiz</button>
+    <span style="padding-right:20px"></span>
+    <button class="btn btn-info" (click)="mode='review'">Review Answsers</button>
+    <button class="btn btn-success" style="float: right" (click)="onSubmitQuiz();">Submit Quiz</button>
+  </div>
+  <hr/>
+
+</div>
